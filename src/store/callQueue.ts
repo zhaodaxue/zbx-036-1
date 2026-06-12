@@ -26,7 +26,8 @@ interface CallQueueState {
   readyOrders: ShoeOrder[]
   currentIndex: number
   callRound: number
-  setReadyOrders: (orders: ShoeOrder[]) => void
+  reset: (orders: ShoeOrder[]) => void
+  update: (orders: ShoeOrder[]) => void
   next: () => void
   currentOrder: () => ShoeOrder | null
 }
@@ -36,8 +37,42 @@ export const useCallQueue = create<CallQueueState>((set, get) => ({
   currentIndex: 0,
   callRound: 0,
 
-  setReadyOrders: (orders) => {
+  reset: (orders) => {
     set({ readyOrders: orders, currentIndex: 0, callRound: 0 })
+  },
+
+  update: (orders) => {
+    const prev = get()
+    const prevCurrent = prev.readyOrders[prev.currentIndex]
+    const prevCurrentId = prevCurrent?.id
+
+    if (orders.length === 0) {
+      set({ readyOrders: orders, currentIndex: 0 })
+      return
+    }
+
+    if (!prevCurrentId) {
+      set({ readyOrders: orders, currentIndex: 0 })
+      return
+    }
+
+    const idx = orders.findIndex((o) => o.id === prevCurrentId)
+    if (idx !== -1) {
+      set({ readyOrders: orders, currentIndex: idx })
+      return
+    }
+
+    // 当前叫号单被移除：切到下一条，轮次+1，语音播报
+    const nextIndex = prev.currentIndex < orders.length ? prev.currentIndex : 0
+    const nextOrder = orders[nextIndex]
+    set({
+      readyOrders: orders,
+      currentIndex: nextIndex,
+      callRound: prev.callRound + 1,
+    })
+    speak(
+      `请 ${nextOrder.customerSurname} 师傅，取件码 ${formatPickupCode(nextOrder.pickupCode)}，${nextOrder.repairType} 可取`
+    )
   },
 
   next: () => {
@@ -46,7 +81,9 @@ export const useCallQueue = create<CallQueueState>((set, get) => ({
     const nextIndex = (currentIndex + 1) % readyOrders.length
     set({ currentIndex: nextIndex, callRound: callRound + 1 })
     const nextOrder = readyOrders[nextIndex]
-    speak(`请 ${nextOrder.customerSurname} 师傅，取件码 ${formatPickupCode(nextOrder.pickupCode)}，${nextOrder.repairType} 可取`)
+    speak(
+      `请 ${nextOrder.customerSurname} 师傅，取件码 ${formatPickupCode(nextOrder.pickupCode)}，${nextOrder.repairType} 可取`
+    )
   },
 
   currentOrder: () => {

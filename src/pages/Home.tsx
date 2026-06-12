@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import DateSidebar from "@/components/DateSidebar"
 import OrderList from "@/components/OrderList"
 import CallDisplay from "@/components/CallDisplay"
@@ -7,11 +7,14 @@ import { mockOrders } from "@/utils/mockData"
 import { sortOrders } from "@/utils/sort"
 import { filterTodayReady } from "@/utils/filter"
 import { useCallQueue } from "@/store/callQueue"
+import { usePickupStore } from "@/store/pickupStore"
 import { Hammer } from "lucide-react"
 
 export default function Home() {
   const [filterToday, setFilterToday] = useState(false)
-  const { setReadyOrders, callRound } = useCallQueue()
+  const { reset, update, callRound } = useCallQueue()
+  const pickedUpIds = usePickupStore((s) => s.pickedUpIds)
+  const prevFilterToday = useRef(filterToday)
 
   const sorted = useMemo(() => sortOrders(mockOrders), [])
   const displayed = useMemo(
@@ -19,14 +22,20 @@ export default function Home() {
     [filterToday, sorted]
   )
 
-  const readyOrders = useMemo(
-    () => displayed.filter((o) => o.isReady),
-    [displayed]
+  const readyOrdersForCall = useMemo(
+    () => displayed.filter((o) => o.isReady && !pickedUpIds.has(o.id)),
+    [displayed, pickedUpIds]
   )
 
   useEffect(() => {
-    setReadyOrders(readyOrders)
-  }, [readyOrders, setReadyOrders])
+    const filterChanged = prevFilterToday.current !== filterToday
+    prevFilterToday.current = filterToday
+    if (filterChanged) {
+      reset(readyOrdersForCall)
+    } else {
+      update(readyOrdersForCall)
+    }
+  }, [readyOrdersForCall, filterToday, reset, update])
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-parchment font-body">

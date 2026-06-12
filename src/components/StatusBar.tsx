@@ -1,6 +1,8 @@
 import type { ShoeOrder } from "@/utils/mockData"
 import { getTodayStr } from "@/utils/filter"
-import { Clock, CheckCircle, RotateCw } from "lucide-react"
+import { usePickupStore } from "@/store/pickupStore"
+import { Clock, CheckCircle, RotateCw, Package } from "lucide-react"
+import { useMemo } from "react"
 
 interface StatusBarProps {
   displayedOrders: ShoeOrder[]
@@ -8,11 +10,27 @@ interface StatusBarProps {
 }
 
 export default function StatusBar({ displayedOrders, callRound }: StatusBarProps) {
-  const pendingCount = displayedOrders.filter((o) => !o.isReady).length
-  const todayStr = getTodayStr()
-  const todayReadyCount = displayedOrders.filter(
-    (o) => o.isReady && o.estimatedPickupDate === todayStr
-  ).length
+  const { isPickedUp } = usePickupStore()
+
+  const { pendingCount, todayReadyCount, pickedCount } = useMemo(() => {
+    const todayStr = getTodayStr()
+    let pending = 0
+    let todayReady = 0
+    let picked = 0
+    for (const o of displayedOrders) {
+      if (isPickedUp(o.id)) {
+        picked++
+        continue
+      }
+      if (!o.isReady) {
+        pending++
+      }
+      if (o.isReady && o.estimatedPickupDate === todayStr) {
+        todayReady++
+      }
+    }
+    return { pendingCount: pending, todayReadyCount: todayReady, pickedCount: picked }
+  }, [displayedOrders, isPickedUp])
 
   const items = [
     {
@@ -30,11 +48,18 @@ export default function StatusBar({ displayedOrders, callRound }: StatusBarProps
       bg: "bg-bark-100",
     },
     {
+      icon: Package,
+      label: "本会已取",
+      value: pickedCount,
+      color: "text-bark-700",
+      bg: "bg-bark-200/60",
+    },
+    {
       icon: RotateCw,
       label: "已叫号轮次",
       value: callRound,
-      color: "text-bark-700",
-      bg: "bg-bark-200/50",
+      color: "text-bark-800",
+      bg: "bg-bark-200/80",
     },
   ]
 
@@ -43,7 +68,7 @@ export default function StatusBar({ displayedOrders, callRound }: StatusBarProps
       {items.map((item) => (
         <div
           key={item.label}
-          className={`flex-1 flex items-center justify-center gap-3 py-3 ${item.bg}`}
+          className={`flex-1 flex items-center justify-center gap-3 py-3 border-r last:border-r-0 border-bark-200 ${item.bg}`}
         >
           <item.icon className={`w-5 h-5 ${item.color} opacity-70`} />
           <span className="text-xs text-bark-400">{item.label}</span>
