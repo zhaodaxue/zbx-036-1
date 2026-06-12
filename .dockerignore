@@ -1,0 +1,5 @@
+.dockerignore
+.git
+.trae
+node_modules
+dist
