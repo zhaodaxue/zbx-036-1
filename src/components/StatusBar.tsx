@@ -3,14 +3,14 @@ import { getTodayStr } from "@/utils/filter"
 import { Clock, CheckCircle, RotateCw } from "lucide-react"
 
 interface StatusBarProps {
-  orders: ShoeOrder[]
+  displayedOrders: ShoeOrder[]
   callRound: number
 }
 
-export default function StatusBar({ orders, callRound }: StatusBarProps) {
-  const pendingCount = orders.filter((o) => !o.isReady).length
+export default function StatusBar({ displayedOrders, callRound }: StatusBarProps) {
+  const pendingCount = displayedOrders.filter((o) => !o.isReady).length
   const todayStr = getTodayStr()
-  const todayReadyCount = orders.filter(
+  const todayReadyCount = displayedOrders.filter(
     (o) => o.isReady && o.estimatedPickupDate === todayStr
   ).length
 

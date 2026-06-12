@@ -58,7 +58,7 @@ export default function Home() {
           <CallDisplay />
         </div>
 
-        <StatusBar orders={sorted} callRound={callRound} />
+        <StatusBar displayedOrders={displayed} callRound={callRound} />
       </div>
     </div>
   )

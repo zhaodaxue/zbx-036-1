@@ -1,12 +1,20 @@
-import { useCallQueue } from "@/store/callQueue"
+import { useCallQueue, speak, formatPickupCode } from "@/store/callQueue"
 import { Volume2, SkipForward } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
 export default function CallDisplay() {
   const { readyOrders, currentIndex, callRound, next } = useCallQueue()
   const [flashKey, setFlashKey] = useState(0)
+  const hasSpokenInitial = useRef(false)
 
   const order = readyOrders.length > 0 ? readyOrders[currentIndex] : null
+
+  useEffect(() => {
+    if (order && !hasSpokenInitial.current) {
+      hasSpokenInitial.current = true
+      speak(`请 ${order.customerSurname} 师傅，取件码 ${formatPickupCode(order.pickupCode)}，${order.repairType} 可取`)
+    }
+  }, [order])
 
   const handleNext = () => {
     if (readyOrders.length === 0) return
